@@ -1,1 +1,1 @@
-web: gunicorn Dronelens.wsgi --log-file -
+web: gunicorn dronelens.wsgi --log-file -

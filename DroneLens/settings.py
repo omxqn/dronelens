@@ -36,7 +36,11 @@ SECRET_KEY = 'django-insecure-%3&eu&wn8dxd36hh-poet@lg0udqems!_rn(1au&2l&)3w#c#e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# At the bottom of settings.py
+if os.getenv('DYNO'):
+    DEBUG = False
+    ALLOWED_HOSTS = ['*']  # Or be specific, e.g. ['dronelens.herokuapp.com']
+
 
 
 # Application definition

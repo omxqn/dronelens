@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+    <title>Drone Lens - Delete Category</title>
+    <style>
+        .delete-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .warning-icon {
+            font-size: 48px;
+            color: #d32f2f;
+            margin-bottom: 20px;
+        }
+        
+        .delete-message {
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .delete-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .btn-danger {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-secondary {
+            background-color: #757575;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .btn-danger:hover {
+            background-color: #b71c1c;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #616161;
+        }
+    </style>
+</head>
+<body>
+    <!-- App Bar -->
+    <div class="app-bar">
+        <h1>Drone Lens</h1>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <a href="{% url 'file' %}" class="tab-link">File</a>
+        <a href="{% url 'analyze' %}" class="tab-link">Analyze</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="delete-container">
+        <div class="warning-icon">⚠️</div>
+        <h2>Delete Category</h2>
+        
+        <div class="delete-message">
+            <p>Are you sure you want to delete the category <strong>"{{ category.name }}"</strong>?</p>
+            <p>This action cannot be undone. All associations with video segments will be removed.</p>
+        </div>
+        
+        <div class="delete-actions">
+            <a href="{% url 'edit_categories' %}" class="btn-secondary">Cancel</a>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

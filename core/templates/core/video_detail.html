@@ -1,0 +1,428 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+    <title>Drone Lens - Video Trim</title>
+    <style>
+        .video-container {
+            margin: 20px 0;
+            width: 100%;
+        }
+        
+        .video-player {
+            width: 100%;
+            max-height: 500px;
+            background-color: #000;
+            margin-bottom: 20px;
+        }
+        
+        .trim-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        .time-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .time-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .segment-list {
+            margin-top: 20px;
+        }
+        
+        .segment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .segment-info {
+            flex-grow: 1;
+        }
+        
+        .segment-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .category-selection {
+            margin-top: 15px;
+        }
+        
+        .category-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .category-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .segment-name-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-secondary {
+            background-color: #757575;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-danger {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        
+        .segments-to-create {
+            margin-top: 30px;
+        }
+        
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            display: none;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #6200ea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- App Bar -->
+    <div class="app-bar">
+        <h1>Drone Lens</h1>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <a href="{% url 'file' %}" class="tab-link active">File</a>
+        <a href="{% url 'analyze' %}" class="tab-link">Analyze</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="video-detail">
+            <h2>{{ video.name }}</h2>
+            
+            <div class="video-container">
+                <video id="videoPlayer" class="video-player" src="{{ video.file.url }}" controls></video>
+                
+                <div class="trim-controls">
+                    <h3>Trim Video</h3>
+                    <div class="time-controls">
+                        <label for="startTime">Start Time (seconds):</label>
+                        <input type="number" id="startTime" class="time-input" min="0" step="0.1" value="0">
+                        
+                        <label for="endTime">End Time (seconds):</label>
+                        <input type="number" id="endTime" class="time-input" min="0" step="0.1" value="0">
+                        
+                        <button id="setStartBtn" class="btn-secondary btn-sm">Set Current as Start</button>
+                        <button id="setEndBtn" class="btn-secondary btn-sm">Set Current as End</button>
+                    </div>
+                    
+                    <div>
+                        <label for="segmentName">Segment Name:</label>
+                        <input type="text" id="segmentName" class="segment-name-input" placeholder="Enter segment name">
+                    </div>
+                    
+                    <div class="category-selection">
+                        <label>Categories:</label>
+                        <div class="category-checkboxes">
+                            {% for category in categories %}
+                            <div class="category-checkbox">
+                                <input type="checkbox" id="category_{{ category.id }}" value="{{ category.id }}">
+                                <label for="category_{{ category.id }}">{{ category.name }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <button id="addSegmentBtn" class="btn-primary">Add Segment</button>
+                </div>
+                
+                <div class="segments-to-create">
+                    <h3>Segments to Create</h3>
+                    <div id="segmentsList" class="segment-list">
+                        <!-- Segments will be added here dynamically -->
+                        <div class="empty-state">No segments added yet.</div>
+                    </div>
+                    
+                    <button id="processSegmentsBtn" class="btn-primary" style="margin-top: 20px;">Process All Segments</button>
+                </div>
+                
+                <div class="existing-segments">
+                    <h3>Existing Segments</h3>
+                    <div class="segment-list">
+                        {% for segment in segments %}
+                        <div class="segment-item">
+                            <div class="segment-info">
+                                <strong>{{ segment.name }}</strong>
+                                <div>Time: {{ segment.start_time }}s - {{ segment.end_time }}s</div>
+                                <div>
+                                    Categories: 
+                                    {% for cat in segment.categories.all %}
+                                    {{ cat.category.name }}{% if not forloop.last %}, {% endif %}
+                                    {% empty %}
+                                    None
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="segment-actions">
+                                <a href="{{ segment.file.url }}" class="btn-secondary btn-sm" target="_blank">View</a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">No segments created yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Processing Overlay -->
+    <div id="processingOverlay" class="processing-overlay">
+        <div class="spinner"></div>
+        <h3>Processing Video Segments...</h3>
+        <p>This may take a few minutes depending on the video size and number of segments.</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const startTimeInput = document.getElementById('startTime');
+            const endTimeInput = document.getElementById('endTime');
+            const setStartBtn = document.getElementById('setStartBtn');
+            const setEndBtn = document.getElementById('setEndBtn');
+            const segmentNameInput = document.getElementById('segmentName');
+            const addSegmentBtn = document.getElementById('addSegmentBtn');
+            const segmentsList = document.getElementById('segmentsList');
+            const processSegmentsBtn = document.getElementById('processSegmentsBtn');
+            const processingOverlay = document.getElementById('processingOverlay');
+            
+            // Store segments to be processed
+            const segmentsToProcess = [];
+            
+            // Set video duration when metadata is loaded
+            videoPlayer.addEventListener('loadedmetadata', function() {
+                endTimeInput.value = videoPlayer.duration.toFixed(1);
+            });
+            
+            // Set current time as start or end
+            setStartBtn.addEventListener('click', function() {
+                startTimeInput.value = videoPlayer.currentTime.toFixed(1);
+            });
+            
+            setEndBtn.addEventListener('click', function() {
+                endTimeInput.value = videoPlayer.currentTime.toFixed(1);
+            });
+            
+            // Add segment to the list
+            addSegmentBtn.addEventListener('click', function() {
+                const startTime = parseFloat(startTimeInput.value);
+                const endTime = parseFloat(endTimeInput.value);
+                const segmentName = segmentNameInput.value.trim() || `Segment_${segmentsToProcess.length + 1}`;
+                
+                // Validate inputs
+                if (isNaN(startTime) || isNaN(endTime)) {
+                    alert('Please enter valid start and end times.');
+                    return;
+                }
+                
+                if (startTime >= endTime) {
+                    alert('End time must be greater than start time.');
+                    return;
+                }
+                
+                if (endTime > videoPlayer.duration) {
+                    alert('End time cannot exceed video duration.');
+                    return;
+                }
+                
+                // Get selected categories
+                const selectedCategories = [];
+                document.querySelectorAll('.category-checkbox input:checked').forEach(checkbox => {
+                    selectedCategories.push(parseInt(checkbox.value));
+                });
+                
+                // Create segment object
+                const segment = {
+                    name: segmentName,
+                    start_time: startTime,
+                    end_time: endTime,
+                    categories: selectedCategories
+                };
+                
+                // Add to array
+                segmentsToProcess.push(segment);
+                
+                // Update UI
+                updateSegmentsList();
+                
+                // Reset form
+                segmentNameInput.value = '';
+                document.querySelectorAll('.category-checkbox input').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            });
+            
+            // Update segments list in UI
+            function updateSegmentsList() {
+                if (segmentsToProcess.length === 0) {
+                    segmentsList.innerHTML = '<div class="empty-state">No segments added yet.</div>';
+                    return;
+                }
+                
+                let html = '';
+                segmentsToProcess.forEach((segment, index) => {
+                    const categoryNames = [];
+                    segment.categories.forEach(catId => {
+                        const catLabel = document.querySelector(`label[for="category_${catId}"]`);
+                        if (catLabel) {
+                            categoryNames.push(catLabel.textContent);
+                        }
+                    });
+                    
+                    html += `
+                        <div class="segment-item">
+                            <div class="segment-info">
+                                <strong>${segment.name}</strong>
+                                <div>Time: ${segment.start_time}s - ${segment.end_time}s</div>
+                                <div>Categories: ${categoryNames.length > 0 ? categoryNames.join(', ') : 'None'}</div>
+                            </div>
+                            <div class="segment-actions">
+                                <button class="btn-danger btn-sm" onclick="removeSegment(${index})">Remove</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                segmentsList.innerHTML = html;
+            }
+            
+            // Remove segment from list
+            window.removeSegment = function(index) {
+                segmentsToProcess.splice(index, 1);
+                updateSegmentsList();
+            };
+            
+            // Process all segments
+            processSegmentsBtn.addEventListener('click', function() {
+                if (segmentsToProcess.length === 0) {
+                    alert('Please add at least one segment to process.');
+                    return;
+                }
+                
+                // Show processing overlay
+                processingOverlay.style.display = 'flex';
+                
+                // Send data to server
+                fetch('{% url "trim_video" video.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        segments: segmentsToProcess
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear segments list
+                        segmentsToProcess.length = 0;
+                        updateSegmentsList();
+                        
+                        // Reload page to show new segments
+                        window.location.reload();
+                    } else {
+                        alert('Error processing segments: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error processing segments. Please try again.');
+                })
+                .finally(() => {
+                    // Hide processing overlay
+                    processingOverlay.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

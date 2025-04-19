@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Drone Lens - Your ultimate solution for drone video management and analysis.">
+    <meta name="keywords" content="drone, video management, video analysis, drone lens">
+    <meta name="author" content="Your Name">
+    <link rel="icon" href="{% static 'core/images/favicon.ico' %}" type="image/x-icon">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+    <title>Drone Lens - Home</title>
+</head>
+<body>
+    <!-- App Bar -->
+    <div class="app-bar">
+        <h1>Drone Lens</h1>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <a href="{% url 'file' %}" class="tab-link {% if request.path == '/' or request.path == '/file/' %}active{% endif %}" aria-label="File Tab">File</a>
+        <a href="{% url 'analyze' %}" class="tab-link {% if request.path == '/analyze/' %}active{% endif %}" aria-label="Analyze Tab">Analyze</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <h2>Welcome to Drone Lens</h2>
+        <p>Your ultimate solution for drone video management and analysis.</p>
+    </div>
+</body>
+</html>
